@@ -9,7 +9,7 @@ import MapKit
 import UIKit
 import CoreLocation
 
-class ViewController: UIViewController ,CLLocationManagerDelegate , UITextFieldDelegate, MKMapViewDelegate,UIGestureRecognizerDelegate{
+class ViewController: UIViewController ,CLLocationManagerDelegate , UITextFieldDelegate,UIGestureRecognizerDelegate,MKMapViewDelegate{
     
     @IBOutlet weak var myMap: MKMapView!
     
@@ -30,8 +30,20 @@ class ViewController: UIViewController ,CLLocationManagerDelegate , UITextFieldD
         manager.requestWhenInUseAuthorization()
         manager.desiredAccuracy = kCLLocationAccuracyBest
 
-    manager.startUpdatingLocation()
+        manager.startUpdatingLocation()
+        // User Current Location
+        let coordinates = CLLocationCoordinate2D(latitude: manager.location?.coordinate.latitude ?? 0.0, longitude: manager.location?.coordinate.longitude ?? 0.0)
+
+        let span = MKCoordinateSpan (latitudeDelta: 0.5, longitudeDelta: 0.5)
+        let region = MKCoordinateRegion(center: coordinates, span: span)
+        myMap.setRegion(region, animated: true)
         
+        let myPin = MKPointAnnotation()
+        
+        myPin.coordinate = coordinates
+        myPin.title = " Hey There!"
+        myPin.subtitle = "I'm Here!"
+        myMap.addAnnotation(myPin)
         
         textField_Address.delegate = self
         
@@ -98,7 +110,6 @@ class ViewController: UIViewController ,CLLocationManagerDelegate , UITextFieldD
     }
     
     
-    
     func mapView( mapView:MKMapView , rendererFor overlay: MKOverlay) -> MKOverlayRenderer{
         let renderer = MKPolygonRenderer(overlay : overlay as! MKPolyline)
         renderer.strokeColor = .red
@@ -107,30 +118,21 @@ class ViewController: UIViewController ,CLLocationManagerDelegate , UITextFieldD
         return renderer
     }
     
-    
+    /*
 @objc  func locationManager(manager: CLLocationManager ,didupdateLocations locations: [CLLocation]) {
-        if let userLocations = locations.first  {
+        if let userLocations = locations.last  {
             
             manager.stopUpdatingLocation()
             
             let coordinates = CLLocationCoordinate2D(latitude: manager.location?.coordinate.latitude ?? 0.0, longitude: manager.location?.coordinate.longitude ?? 0.0)
 
-            let span = MKCoordinateSpan (latitudeDelta: 1.0, longitudeDelta: 1.0)
+            let span = MKCoordinateSpan (latitudeDelta: 0.5, longitudeDelta: 0.5)
             let region = MKCoordinateRegion(center: coordinates, span: span)
             myMap.setRegion(region, animated: true)
             
-            
-            
-            let myPin = MKPointAnnotation()
-            
-            myPin.coordinate = coordinates
-            myPin.title = " Hey There!"
-            myPin.subtitle = "I'm Here!"
-            myMap.addAnnotation(myPin)
-            
         }
         
-    }
+    } */
         
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         switch manager.authorizationStatus{
@@ -151,6 +153,7 @@ class ViewController: UIViewController ,CLLocationManagerDelegate , UITextFieldD
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print(error)
     }
+    
     //Double Tap to Drop A pin
     func addDoubleTap() {
         let doubleTap = UITapGestureRecognizer(target: self, action: #selector(dropPin))
@@ -175,7 +178,6 @@ class ViewController: UIViewController ,CLLocationManagerDelegate , UITextFieldD
         annotation.title = "Drop Pin"
         annotation.coordinate = coordinate
         myMap.addAnnotation(annotation)
-        
     }
     
     @objc func addLongPressAnnotattion(gestureRecognizer: UIGestureRecognizer) {
@@ -196,10 +198,19 @@ class ViewController: UIViewController ,CLLocationManagerDelegate , UITextFieldD
     }
 
 //
-    
+
     // Annotation Section
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        
+        guard !(annotation is MKUserLocation) else {
+            return nil
+        }
+        let annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "First Marker A")
+        annotationView.markerTintColor = UIColor.red
+        annotationView.canShowCallout = true
+        annotationView.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
+        return annotationView
+    }
+        /*
         if annotation is MKUserLocation {
             return nil
         }
@@ -219,26 +230,27 @@ class ViewController: UIViewController ,CLLocationManagerDelegate , UITextFieldD
             annotationView.animatesDrop = true
             annotationView.pinTintColor = #colorLiteral(red: 0.9372549057, green: 0.3490196168, blue: 0.1921568662, alpha: 1)
             return annotationView
-            
         default:
             return nil
         }
-    }
+    } */
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-        if overlay is MKCircle {
-            let rendrer = MKCircleRenderer(overlay: overlay)
-            rendrer.fillColor = UIColor.red.withAlphaComponent(1.0)
-            rendrer.strokeColor = UIColor.blue
-            rendrer.lineWidth = 2
-            return rendrer
-        } else if overlay is MKPolyline {
+        if overlay is MKPolyline {
             let rendrer = MKPolylineRenderer(overlay: overlay)
             rendrer.strokeColor = UIColor.green
             rendrer.fillColor = UIColor.red.withAlphaComponent(1.0)
             rendrer.lineWidth = 3
             return rendrer
         }
+        else if overlay is MKPolygon {
+            let rendrer = MKPolygonRenderer(overlay: overlay)
+            rendrer.fillColor = UIColor.red.withAlphaComponent(0.6)
+            rendrer.strokeColor = UIColor.red
+            rendrer.lineWidth = 2
+            return rendrer
+        }
         return MKOverlayRenderer()
     }
-}
+    }
+
 
